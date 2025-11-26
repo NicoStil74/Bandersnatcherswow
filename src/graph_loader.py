@@ -1,0 +1,1 @@
+#Purpose: Reads a graph from a file and converts it into a structure your algorithm can use.
