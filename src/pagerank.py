@@ -1,5 +1,5 @@
-#Contains the PageRank algorithm itself.
-##take the adjacency list from graph_loader.py
+"""Contains the PageRank algorithm itself.
+   take the adjacency list from graph_loader.py"""
 
 
 """run the iterative PageRank loop (“redistribute score along links”)
