@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import json
+import os
 
 # Hard skip rules
 SKIP_PREFIXES = (
@@ -128,10 +129,12 @@ if __name__ == "__main__":
 
     print("\nUnique pages:", len(result))
 
-    current_dir = os.path.dirname(__file__)
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(current_dir, "graph.json")
 
-    with open("graph.json", "w") as f:
+
+    with open(output_path, "w") as f:
         json.dump(result, f, indent=2)
 
-    print("Saved graph.json")
+    print(f"Saved graph.json at: {output_path}")
