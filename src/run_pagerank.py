@@ -9,7 +9,6 @@ md_path = os.path.join(current_dir, "graph_sources", "graph_history.md")
 
 with open(json_path, "r", encoding="utf-8") as f:
     data = json.load(f)
-python src/run_pagerank.py
 
 graph_data = data["graph"]
 crawl_info = data["crawl_info"]
