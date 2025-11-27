@@ -1,66 +1,55 @@
-"""Contains the PageRank algorithm itself.
-   take the adjacency list from graph_loader.py"""
-
-
-"""run the iterative PageRank loop (“redistribute score along links”)
-handle:
---> damping factor (random jump, usually 0.85)
---> dangling nodes (pages with no outgoing links)
---> convergence stopping (when scores stop changing)
---> return a list/array of scores (one per node)"""
-
-
 import json
 import networkx as nx
 import numpy as np
 import os
 import statistics
+from datetime import datetime
 
-
-# Load graph
-
-
-
+# Load graph.json
 current_dir = os.path.dirname(os.path.abspath(__file__))
-output_path = os.path.join(current_dir + "/graph_sources", "graph.json")
-output_path_md = os.path.join(current_dir + "/graph_sources", "graph_history.md")
+output_path = os.path.join(current_dir, "graph_sources", "graph.json")
+output_path_md = os.path.join(current_dir, "graph_sources", "graph_history.md")
 
 with open(output_path) as f:
-    graph = json.load(f)
-    
-max_pages = graph["max_pages"]
-pages_crawled = graph["pages_crawled"]
+    data = json.load(f)
 
+graph_data = data["graph"]         # only adjacency list
+crawl_info = data["crawl_info"]    # metadata
 
+max_pages = crawl_info["max_pages"]
+pages_crawled = crawl_info["pages_crawled"]
+start_url = crawl_info["start_url"]
 
+# Build directed graph
 G = nx.DiGraph()
-for src, targets in graph.items():
+for src, targets in graph_data.items():
     for dst in targets:
         G.add_edge(src, dst)
 
-
+# Run PageRank
 pr = nx.pagerank(G, alpha=0.85)
 
-# sort pagernk 
+# Sort PageRank
 sorted_pr = sorted(pr.items(), key=lambda x: x[1], reverse=True)
-
 top10 = sorted_pr[:10]
+
+# Prepare markdown
 lines = [
-   "##Top 10 PageRank results \n",
+    "## Top 10 PageRank results\n",
+   f"{str(datetime.now())[:16]}\n",
+    f"- **Max pages:** {max_pages}\n",
+    f"- **Pages crawled:** {pages_crawled}\n",
+    f"- **Start URL:** {start_url}\n",
+    "---\n\n"
 ]
 
+for i, (page, score) in enumerate(top10, 0):
+    lines.append(f"{i}. **{score:.5f}**\t~{str(page)[18:]}\n")
 
-i = 0
-for page, score in top10:
-   lines.append(f"{i}. **{score:.5f}** \t ~{str(page)[18:]}\n")
-   i += 1
-
-
+# Write markdown
 with open(output_path_md, "a", encoding="utf-8") as f:
     f.write("\n" + "".join(lines))
 
-
-# print top pages 
-for page, score in sorted_pr[:10]:
-
+# Print top pages
+for page, score in top10:
     print(f"{score:.5f}  →  {page}")

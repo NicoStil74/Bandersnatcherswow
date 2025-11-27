@@ -4,6 +4,11 @@ from urllib.parse import urljoin, urlparse
 import json
 import os
 
+
+
+max_pages = 30
+
+
 # Hard skip rules
 SKIP_PREFIXES = (
     "mailto:", "tel:", "javascript:", "#", ":", " "
@@ -55,8 +60,7 @@ def is_valid_link(clean, domain):
 
     return True
 
-
-def crawl_mvp(start_url, max_pages=10):
+def crawl_mvp(start_url, max_pages):
     visited = set()
     to_visit = [start_url]
     domain = urlparse(start_url).netloc
@@ -119,25 +123,35 @@ def crawl_mvp(start_url, max_pages=10):
 
     # Convert sets to lists for JSON
     graph = {k: list(v) for k, v in graph.items()}
-    return graph, {
-        "max_pages":max_pages, 
-        "pages_crawled":len(visited)
-    }
+    return graph
 
 
 # Run the crawler
 if __name__ == "__main__":
     start = "https://www.tum.de"
-    result = crawl_mvp(start, max_pages=10)
+
+
+    # Run your crawler
+    result = crawl_mvp(start, max_pages)
 
     print("\nUnique pages:", len(result))
 
-
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(current_dir + "/graph_sources", "graph.json")
+    output_path = os.path.join(current_dir, "graph_sources", "graph.json")
 
+    # Build the JSON object containing graph + metadata
+    data = {
+        "graph": result,        # <- your crawled graph
+        "crawl_info": {
+            "max_pages": max_pages,
+            "pages_crawled": len(result),
+            "start_url": start
+        }
+    }
 
+    # Write to graph.json
     with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
+        json.dump(data, f, indent=2)
 
     print(f"Saved graph.json at: {output_path}")
+
