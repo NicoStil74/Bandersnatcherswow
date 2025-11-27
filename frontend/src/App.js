@@ -1,9 +1,8 @@
-import logo from "./assets/TUMSEARCH.png";
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./App.css";
 import ForceGraph2D from "react-force-graph-2d";
 
-const API_URL = "http://localhost:3000";
+const API_URL = "http://localhost:3001";
 
 function computePageRank(adj, iterations = 30, damping = 0.85) {
     const nodes = Object.keys(adj);
@@ -44,7 +43,7 @@ function computePageRank(adj, iterations = 30, damping = 0.85) {
     return pr;
 }
 
-function buildForceGraphData(adj) {
+function buildForceGraphData(adj, titleMap = {}) {
     const nodesMap = new Map();
     const links = [];
 
@@ -54,7 +53,7 @@ function buildForceGraphData(adj) {
         if (!nodesMap.has(src)) {
             nodesMap.set(src, {
                 id: src,
-                title: src,
+                title: titleMap[src] || src.replace(/_/g, ' '),
                 pagerank: pr[src] || 0
             });
         }
@@ -63,7 +62,7 @@ function buildForceGraphData(adj) {
             if (!nodesMap.has(dst)) {
                 nodesMap.set(dst, {
                     id: dst,
-                    title: dst,
+                    title: titleMap[dst] || dst.replace(/_/g, ' '),
                     pagerank: pr[dst] || 0
                 });
             }
@@ -77,34 +76,37 @@ function buildForceGraphData(adj) {
     };
 }
 
-// Fallback tiny demo graph (if something goes wrong)
 const demoData = {
     nodes: [
-        { id: "A", title: "Home", pagerank: 0.4 },
-        { id: "B", title: "About", pagerank: 0.2 },
-        { id: "C", title: "Contact", pagerank: 0.15 },
-        { id: "D", title: "Blog", pagerank: 0.1 },
-        { id: "E", title: "FAQ", pagerank: 0.08 }
+        { id: "Machine_learning", title: "Machine Learning", pagerank: 0.25 },
+        { id: "Artificial_intelligence", title: "Artificial Intelligence", pagerank: 0.2 },
+        { id: "Neural_network", title: "Neural Network", pagerank: 0.18 },
+        { id: "Deep_learning", title: "Deep Learning", pagerank: 0.15 },
+        { id: "Data_science", title: "Data Science", pagerank: 0.12 },
+        { id: "Statistics", title: "Statistics", pagerank: 0.1 }
     ],
     links: [
-        { source: "A", target: "B" },
-        { source: "A", target: "C" },
-        { source: "B", target: "D" },
-        { source: "C", target: "D" },
-        { source: "D", target: "E" },
-        { source: "E", target: "A" }
+        { source: "Machine_learning", target: "Artificial_intelligence" },
+        { source: "Machine_learning", target: "Neural_network" },
+        { source: "Machine_learning", target: "Deep_learning" },
+        { source: "Artificial_intelligence", target: "Neural_network" },
+        { source: "Deep_learning", target: "Neural_network" },
+        { source: "Machine_learning", target: "Data_science" },
+        { source: "Data_science", target: "Statistics" }
     ]
 };
 
 function App() {
     const [fileName, setFileName] = useState("");
-    const [url, setUrl] = useState("");
+    const [baseUrl, setBaseUrl] = useState("https://www.tum.de");
+    const [searchKeyword, setSearchKeyword] = useState("");
     const [data, setData] = useState(demoData);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [uploadedFile, setUploadedFile] = useState(null);
     const [crawling, setCrawling] = useState(false);
     const [crawlStatus, setCrawlStatus] = useState("");
+    const [titles, setTitles] = useState({});
 
     const [hoverNode, setHoverNode] = useState(null);
     const [selectedNode, setSelectedNode] = useState(null);
@@ -119,8 +121,9 @@ function App() {
                 const response = await fetch(`${API_URL}/default-graph`);
                 const json = await response.json();
                 if (json.graph) {
-                    const built = buildForceGraphData(json.graph);
+                    const built = buildForceGraphData(json.graph, json.titles || {});
                     setData(built);
+                    setTitles(json.titles || {});
                     setError("");
                 } else {
                     throw new Error("No graph in response");
@@ -228,7 +231,7 @@ function App() {
         e.preventDefault();
         setError("");
 
-        if (!uploadedFile && !url.trim()) {
+        if (!uploadedFile && !baseUrl.trim()) {
             setError("Please upload a graph file or enter a URL.");
             return;
         }
@@ -277,8 +280,8 @@ function App() {
     };
 
     const handleStartCrawl = async () => {
-        if (!url.trim()) {
-            setError("Please enter a URL to crawl.");
+        if (!baseUrl.trim()) {
+            setError("Please enter a base URL to crawl.");
             return;
         }
 
@@ -290,7 +293,11 @@ function App() {
             await fetch(`${API_URL}/start-crawl`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ startUrl: url, maxPages: 50 })
+                body: JSON.stringify({ 
+                    startUrl: baseUrl,
+                    keyword: searchKeyword.trim() || null,
+                    maxPages: 50 
+                })
             });
 
             const pollStatus = setInterval(async () => {
@@ -305,8 +312,9 @@ function App() {
                         const graphRes = await fetch(`${API_URL}/default-graph`);
                         const graphJson = await graphRes.json();
                         if (graphJson.graph) {
-                            const built = buildForceGraphData(graphJson.graph);
+                            const built = buildForceGraphData(graphJson.graph, graphJson.titles || {});
                             setData(built);
+                            setTitles(graphJson.titles || {});
                         }
                     }
                 }
@@ -355,12 +363,22 @@ function App() {
 
     const handleSearch = (e) => {
         e.preventDefault();
-        const id = searchId.trim();
+        const id = searchId.trim().toLowerCase();
         if (!id) return;
 
-        const node = nodeById.get(id);
+        let node = nodeById.get(searchId.trim());
+        
         if (!node) {
-            setError(`Node "${id}" not found in current graph.`);
+            for (const [key, value] of nodeById.entries()) {
+                if (key.toLowerCase().includes(id) || (value.title && value.title.toLowerCase().includes(id))) {
+                    node = value;
+                    break;
+                }
+            }
+        }
+        
+        if (!node) {
+            setError(`No node containing "${searchId.trim()}" found.`);
             return;
         }
 
@@ -399,7 +417,7 @@ function App() {
                     boxSizing: "border-box"
                 }}
             >
-                {/* HEADER WITH LOGO */}
+                {/* HEADER */}
                 <div
                     style={{
                         display: "flex",
@@ -407,17 +425,9 @@ function App() {
                         gap: "0.9rem"
                     }}
                 >
-                    <img
-                        src={logo}
-                        alt="TUMSearch logo"
-                        style={{
-                            height: 85,
-                            objectFit: "contain",
-                            marginLeft: "-0.3rem"
-                        }}
-                    />
+                    <div style={{ fontSize: "3rem" }}>🐰</div>
                     <div>
-                        <h1 style={{ margin: 0, fontSize: "1.65rem" }}>TUMSearch</h1>
+                        <h1 style={{ margin: 0, fontSize: "1.65rem" }}>Wiki Rabbit Hole</h1>
                         <p
                             style={{
                                 marginTop: "0.15rem",
@@ -425,12 +435,12 @@ function App() {
                                 color: "#cbd5f5"
                             }}
                         >
-                            PageRank Explorer
+                            Explore how topics connect
                         </p>
                     </div>
                 </div>
 
-                {/* INPUT GRAPH */}
+                {/* START TOPIC */}
                 <section>
                     <h2
                         style={{
@@ -441,73 +451,22 @@ function App() {
                             color: "#9ca3af"
                         }}
                     >
-                        Input graph
+                        Start exploring
                     </h2>
 
                     <form
-                        onSubmit={handleCompute}
+                        onSubmit={(e) => { e.preventDefault(); handleStartCrawl(); }}
                         style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}
                     >
                         <label style={{ fontSize: "0.85rem" }}>
               <span style={{ display: "block", marginBottom: 4 }}>
-                Upload adjacency list / edge list
+                Website URL
               </span>
                             <input
-                                type="file"
-                                onChange={handleFileChange}
-                                style={{
-                                    width: "100%",
-                                    padding: "0.4rem 0.5rem",
-                                    borderRadius: 8,
-                                    border: "1px solid rgba(148,163,184,0.8)",
-                                    background: "rgba(15,23,42,0.9)",
-                                    color: "#e5e7eb",
-                                    fontSize: "0.8rem"
-                                }}
-                            />
-                            {fileName && (
-                                <small style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
-                                    Selected: {fileName}
-                                </small>
-                            )}
-                        </label>
-
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                                margin: "0.3rem 0",
-                                color: "#6b7280",
-                                fontSize: "0.75rem"
-                            }}
-                        >
-                            <div
-                                style={{
-                                    flex: 1,
-                                    height: 1,
-                                    background: "rgba(148,163,184,0.4)"
-                                }}
-                            />
-                            <span>or</span>
-                            <div
-                                style={{
-                                    flex: 1,
-                                    height: 1,
-                                    background: "rgba(148,163,184,0.4)"
-                                }}
-                            />
-                        </div>
-
-                        <label style={{ fontSize: "0.85rem" }}>
-              <span style={{ display: "block", marginBottom: 4 }}>
-                Crawl from URL
-              </span>
-                            <input
-                                type="url"
-                                placeholder="https://example.com"
-                                value={url}
-                                onChange={(e) => setUrl(e.target.value)}
+                                type="text"
+                                placeholder="e.g. https://www.tum.de"
+                                value={baseUrl}
+                                onChange={(e) => setBaseUrl(e.target.value)}
                                 style={{
                                     width: "100%",
                                     padding: "0.45rem 0.55rem",
@@ -518,6 +477,30 @@ function App() {
                                     fontSize: "0.8rem"
                                 }}
                             />
+                        </label>
+
+                        <label style={{ fontSize: "0.85rem" }}>
+              <span style={{ display: "block", marginBottom: 4 }}>
+                🔍 Keyword Filter (optional)
+              </span>
+                            <input
+                                type="text"
+                                placeholder="e.g. research, studium, fakultät"
+                                value={searchKeyword}
+                                onChange={(e) => setSearchKeyword(e.target.value)}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.45rem 0.55rem",
+                                    borderRadius: 8,
+                                    border: "1px solid rgba(148,163,184,0.8)",
+                                    background: "rgba(15,23,42,0.9)",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem"
+                                }}
+                            />
+                            <span style={{ fontSize: "0.7rem", color: "#64748b", marginTop: 2, display: "block" }}>
+                                Only crawl pages containing this keyword
+                            </span>
                         </label>
 
                         {crawlStatus && (
@@ -551,45 +534,23 @@ function App() {
                         )}
 
                         <button
-                            type="button"
-                            onClick={handleStartCrawl}
+                            type="submit"
                             disabled={crawling}
                             style={{
                                 marginTop: 4,
                                 padding: "0.55rem 0.8rem",
                                 borderRadius: 999,
                                 border: "none",
-                                background: "linear-gradient(135deg, #10b981 0, #059669 100%)",
+                                background: "linear-gradient(135deg, #f59e0b 0, #d97706 100%)",
                                 color: "#f9fafb",
                                 fontWeight: 500,
                                 fontSize: "0.9rem",
                                 cursor: crawling ? "default" : "pointer",
-                                boxShadow: "0 12px 30px rgba(16,185,129,0.35)",
+                                boxShadow: "0 12px 30px rgba(245,158,11,0.35)",
                                 opacity: crawling ? 0.7 : 1
                             }}
                         >
-                            {crawling ? "Crawling…" : "Start Crawl"}
-                        </button>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                marginTop: 4,
-                                padding: "0.55rem 0.8rem",
-                                borderRadius: 999,
-                                border: "none",
-                                background:
-                                    "linear-gradient(135deg, #38bdf8 0, #6366f1 40%, #a855f7 100%)",
-                                color: "#f9fafb",
-                                fontWeight: 500,
-                                fontSize: "0.9rem",
-                                cursor: loading ? "default" : "pointer",
-                                boxShadow: "0 12px 30px rgba(37,99,235,0.45)",
-                                opacity: loading ? 0.7 : 1
-                            }}
-                        >
-                            {loading ? "Computing PageRank…" : "Compute PageRank"}
+                            {crawling ? "🐰 Going down the rabbit hole…" : "🐰 Explore"}
                         </button>
 
                         <button
@@ -606,7 +567,7 @@ function App() {
                                 cursor: "pointer"
                             }}
                         >
-                            Use demo graph
+                            Try demo (Machine Learning)
                         </button>
                     </form>
                 </section>
@@ -730,7 +691,7 @@ function App() {
                         Status
                     </h2>
                     <p style={{ margin: 0, fontSize: "0.8rem", color: "#9ca3af" }}>
-                        Nodes: {visibleCount}/{data.nodes.length} • Edges: {filteredGraphData.links.length}/{data.links.length}
+                        Topics: {visibleCount}/{data.nodes.length} • Connections: {filteredGraphData.links.length}/{data.links.length}
                     </p>
                     <p
                         style={{
@@ -738,8 +699,7 @@ function App() {
                             fontSize: "0.8rem"
                         }}
                     >
-                        Hover a node to see its title and PageRank. Drag to explore, scroll to
-                        zoom.
+                        Hover a topic to see connections. Drag to explore, scroll to zoom.
                     </p>
                     <p
                         style={{
@@ -749,11 +709,11 @@ function App() {
                             lineHeight: 1.4
                         }}
                     >
-                        • Larger nodes represent higher PageRank scores.
+                        • Larger nodes = more central topics
                         <br />
-                        • Color encodes PageRank (blue → yellow).
+                        • Yellow = highly connected hub topics
                         <br />
-                        • Hover a node to highlight it and its neighbors; others fade.
+                        • Click a node to open it on Wikipedia
                     </p>
 
                     <div style={{ marginTop: "0.6rem" }}>
@@ -766,7 +726,7 @@ function App() {
                                 color: "#9ca3af"
                             }}
                         >
-                            Top pages
+                            Most connected topics
                         </h3>
                         <ul
                             style={{
@@ -778,17 +738,14 @@ function App() {
                         >
                             {topNodes.map((n, idx) => (
                                 <li key={n.id} style={{ marginBottom: 2 }}>
-                                    {idx + 1}. {n.title || n.id}{" "}
-                                    <span style={{ color: "#9ca3af" }}>
-                    ({(n.pagerank ?? 0).toFixed(4)})
-                  </span>
+                                    {idx + 1}. {n.title || n.id}
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </section>
 
-                {/* NODE DETAILS */}
+                {/* TOPIC DETAILS */}
                 <section>
                     <h2
                         style={{
@@ -799,7 +756,7 @@ function App() {
                             color: "#9ca3af"
                         }}
                     >
-                        Node details
+                        Topic details
                     </h2>
                     {selectedNode ? (
                         <div style={{ fontSize: "0.8rem", color: "#e5e7eb" }}>
@@ -865,7 +822,7 @@ function App() {
                                 color: "#9ca3af"
                             }}
                         >
-                            Graph view
+                            Knowledge map
                         </h2>
                         <p
                             style={{
@@ -874,7 +831,7 @@ function App() {
                                 color: "#9ca3af"
                             }}
                         >
-                            Node size ≈ PageRank score. Layout uses a force-directed simulation.
+                            See how Wikipedia topics connect. Click any node to read about it.
                         </p>
                     </div>
                 </div>
@@ -903,14 +860,10 @@ function App() {
                         onNodeClick={(node) => {
                             setSelectedNode(node);
                             setHoverNode(node);
-                            focusOnNode(node);
+                            window.open(`https://en.wikipedia.org/wiki/${node.id}`, '_blank');
                         }}
                         nodeLabel={(node) =>
-                            `${node.title || node.id}\nPageRank: ${
-                                node.pagerank != null
-                                    ? Number(node.pagerank).toFixed(4)
-                                    : "unknown"
-                            }`
+                            `${node.title || node.id}\nClick to open on Wikipedia`
                         }
                         nodeColor={(node) => {
                             const base = getNodeBaseColor(node);

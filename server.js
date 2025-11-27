@@ -11,7 +11,7 @@ let crawlProcess = null;
 let crawlStatus = { running: false, message: '' };
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -101,7 +101,8 @@ app.post('/start-crawl', (req, res) => {
     return res.status(400).json({ error: 'Crawl already in progress' });
   }
 
-  const { startUrl, maxPages } = req.body;
+  const { startUrl, keyword, maxPages } = req.body;
+  
   if (!startUrl) {
     return res.status(400).json({ error: 'startUrl is required' });
   }
@@ -110,9 +111,18 @@ app.post('/start-crawl', (req, res) => {
 
   const crawlerPath = path.join(__dirname, 'src', 'crawler.py');
   const pythonPath = path.join(__dirname, '.venv', 'bin', 'python');
-  crawlProcess = spawn(pythonPath, [crawlerPath], {
-    env: { ...process.env, START_URL: startUrl, MAX_PAGES: maxPages || '50' }
-  });
+  
+  const env = { 
+    ...process.env, 
+    START_URL: startUrl,
+    MAX_PAGES: String(maxPages || 50)
+  };
+  
+  if (keyword) {
+    env.KEYWORD_FILTER = keyword;
+  }
+  
+  crawlProcess = spawn(pythonPath, [crawlerPath], { env });
 
   crawlProcess.stdout.on('data', (data) => {
     crawlStatus.message = data.toString().trim();

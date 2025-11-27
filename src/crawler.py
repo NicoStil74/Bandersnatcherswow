@@ -6,7 +6,6 @@ import os
 import time
 from collections import deque
 from urllib.parse import urljoin, urlparse, urlunparse
-from urllib.robotparser import RobotFileParser
 from bs4 import BeautifulSoup
 
 logging.basicConfig(
@@ -15,12 +14,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-MAX_PAGES = int(os.environ.get('MAX_PAGES', 100))
+MAX_PAGES = int(os.environ.get('MAX_PAGES', 50))
 START_URL = os.environ.get('START_URL', 'https://www.tum.de')
-DELAY = float(os.environ.get('CRAWL_DELAY', 0.5))
-MAX_DEPTH = int(os.environ.get('MAX_DEPTH', 5))
+KEYWORD_FILTER = os.environ.get('KEYWORD_FILTER', '')
+DELAY = float(os.environ.get('CRAWL_DELAY', 0.3))
+MAX_DEPTH = int(os.environ.get('MAX_DEPTH', 3))
 MAX_RETRIES = int(os.environ.get('MAX_RETRIES', 3))
-CONCURRENCY = int(os.environ.get('CONCURRENCY', 10))
+CONCURRENCY = int(os.environ.get('CONCURRENCY', 5))
 
 SKIP_PREFIXES = ("mailto:", "tel:", "javascript:", "#", "data:")
 
@@ -30,19 +30,12 @@ SKIP_EXTENSIONS = (
     ".mp3", ".mp4", ".avi", ".mov", ".wmv", ".css", ".js"
 )
 
-robots_cache = {}
-
 def normalize_url(url):
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
     netloc = parsed.netloc.lower()
-    if netloc.startswith('www.'):
-        netloc_no_www = netloc[4:]
-    else:
-        netloc_no_www = netloc
     path = parsed.path.rstrip('/') or '/'
-    normalized = urlunparse((scheme, netloc, path, '', parsed.query, ''))
-    return normalized
+    return urlunparse((scheme, netloc, path, '', '', ''))
 
 def is_valid_url(url, domain):
     if not url:
@@ -54,63 +47,28 @@ def is_valid_url(url, domain):
         if url.lower().endswith(ext):
             return False
     parsed = urlparse(url)
-    url_domain = parsed.netloc.lower()
-    if url_domain.startswith('www.'):
-        url_domain = url_domain[4:]
-    target_domain = domain.lower()
-    if target_domain.startswith('www.'):
-        target_domain = target_domain[4:]
-    if url_domain != target_domain:
-        return False
-    return True
+    url_domain = parsed.netloc.lower().replace('www.', '')
+    target_domain = domain.lower().replace('www.', '')
+    return url_domain == target_domain
 
-async def check_robots(session, base_url):
-    domain = urlparse(base_url).netloc
-    if domain in robots_cache:
-        return robots_cache[domain]
-    
-    robots_url = f"{urlparse(base_url).scheme}://{domain}/robots.txt"
-    rp = RobotFileParser()
-    
-    try:
-        async with session.get(robots_url, timeout=aiohttp.ClientTimeout(total=5)) as response:
-            if response.status == 200:
-                content = await response.text()
-                rp.parse(content.splitlines())
-            else:
-                rp.allow_all = True
-    except Exception:
-        rp.allow_all = True
-    
-    robots_cache[domain] = rp
-    return rp
-
-def can_fetch(rp, url):
-    if hasattr(rp, 'allow_all') and rp.allow_all:
-        return True
-    try:
-        return rp.can_fetch("*", url)
-    except Exception:
-        return True
+def get_title(url):
+    parsed = urlparse(url)
+    path = parsed.path.strip('/')
+    if not path:
+        return parsed.netloc
+    return path.split('/')[-1].replace('-', ' ').replace('_', ' ').title()
 
 async def fetch_page(session, url, retries=MAX_RETRIES):
     for attempt in range(retries):
         try:
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
                 if response.status != 200:
-                    logger.warning(f"Status {response.status} for {url}")
                     return None
                 content_type = response.headers.get('Content-Type', '')
                 if 'text/html' not in content_type:
                     return None
-                html = await response.text()
-                return html
-        except asyncio.TimeoutError:
-            logger.warning(f"Timeout (attempt {attempt + 1}/{retries}): {url}")
-            if attempt < retries - 1:
-                await asyncio.sleep(2 ** attempt)
-        except Exception as e:
-            logger.warning(f"Error (attempt {attempt + 1}/{retries}): {url} - {str(e)[:50]}")
+                return await response.text()
+        except:
             if attempt < retries - 1:
                 await asyncio.sleep(2 ** attempt)
     return None
@@ -128,18 +86,20 @@ def extract_links(html, base_url, domain):
             links.add(normalized)
     return links
 
-async def crawl(start_url, max_pages, delay=DELAY, max_depth=MAX_DEPTH):
+async def crawl(start_url, max_pages, keyword_filter="", delay=DELAY, max_depth=MAX_DEPTH):
     start_time = time.time()
     domain = urlparse(start_url).netloc
+    keyword = keyword_filter.lower().strip()
     
     visited = set()
     queue = deque([(normalize_url(start_url), 0)])
     graph = {}
+    titles = {}
     
     connector = aiohttp.TCPConnector(limit=CONCURRENCY)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        rp = await check_robots(session, start_url)
-        
+    headers = {'User-Agent': 'Mozilla/5.0 (compatible; LinkCrawler/1.0)'}
+    
+    async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
         while queue and len(visited) < max_pages:
             batch = []
             while queue and len(batch) < CONCURRENCY and len(visited) + len(batch) < max_pages:
@@ -147,9 +107,6 @@ async def crawl(start_url, max_pages, delay=DELAY, max_depth=MAX_DEPTH):
                 if url in visited:
                     continue
                 if depth > max_depth:
-                    continue
-                if not can_fetch(rp, url):
-                    logger.info(f"Blocked by robots.txt: {url}")
                     continue
                 batch.append((url, depth))
             
@@ -161,39 +118,46 @@ async def crawl(start_url, max_pages, delay=DELAY, max_depth=MAX_DEPTH):
             
             for (url, depth), html in zip(batch, results):
                 visited.add(url)
-                graph[url] = set()
+                title = get_title(url)
+                titles[url] = title
+                graph[url] = []
                 
                 if html:
-                    logger.info(f"[{len(visited)}/{max_pages}] Depth {depth}: {url[:80]}")
+                    if keyword and keyword not in html.lower() and keyword not in url.lower():
+                        logger.info(f"[{len(visited)}/{max_pages}] SKIP (no keyword): {title}")
+                        continue
+                    
+                    logger.info(f"[{len(visited)}/{max_pages}] {title}")
                     links = extract_links(html, url, domain)
-                    graph[url] = links
+                    graph[url] = list(links)
                     
                     for link in links:
-                        if link not in visited and link not in [u for u, _ in queue]:
+                        titles[link] = get_title(link)
+                        if link not in visited:
                             queue.append((link, depth + 1))
-                else:
-                    logger.warning(f"Failed to fetch: {url}")
             
             await asyncio.sleep(delay)
     
-    graph = {k: list(v) for k, v in graph.items()}
     elapsed = time.time() - start_time
-    logger.info(f"Crawl complete: {len(graph)} pages in {elapsed:.2f}s")
-    
-    return graph, elapsed
+    logger.info(f"Done: {len(graph)} pages in {elapsed:.1f}s")
+    return graph, titles, elapsed
 
-def save_graph(graph, start_url, max_pages, elapsed):
+    elapsed = time.time() - start_time
+    logger.info(f"Done: {len(graph)} pages in {elapsed:.1f}s")
+    return graph, titles, elapsed
+
+def save_graph(graph, titles, source, max_pages, elapsed, keyword=""):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(current_dir, "graph_sources", "graph.json")
     
     data = {
         "graph": graph,
+        "titles": titles,
         "crawl_info": {
             "max_pages": max_pages,
             "pages_crawled": len(graph),
-            "start_url": start_url,
-            "max_depth": MAX_DEPTH,
-            "delay": DELAY,
+            "source": source,
+            "keyword_filter": keyword or None,
             "total_time": round(elapsed, 2)
         }
     }
@@ -201,15 +165,15 @@ def save_graph(graph, start_url, max_pages, elapsed):
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2)
     
-    logger.info(f"Saved to {output_path}")
     return output_path
 
 async def main():
-    graph, elapsed = await crawl(START_URL, MAX_PAGES)
-    save_graph(graph, START_URL, MAX_PAGES, elapsed)
-    
-    print(f"\nCrawled {len(graph)} pages in {elapsed:.2f} seconds")
-    print(f"Speed: {len(graph) / elapsed:.2f} pages/second")
+    graph, titles, elapsed = await crawl(START_URL, MAX_PAGES, KEYWORD_FILTER)
+    save_graph(graph, titles, START_URL, MAX_PAGES, elapsed, KEYWORD_FILTER)
+    if KEYWORD_FILTER:
+        print(f"Crawled {len(graph)} pages matching '{KEYWORD_FILTER}' in {elapsed:.1f}s")
+    else:
+        print(f"Crawled {len(graph)} pages in {elapsed:.1f}s")
 
 if __name__ == "__main__":
     asyncio.run(main())
