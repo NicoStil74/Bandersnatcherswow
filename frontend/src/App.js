@@ -1,9 +1,88 @@
 import logo from "./assets/TUMSEARCH.png";
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import "./App.css";
 import ForceGraph2D from "react-force-graph-2d";
 
-// Demo graph so you always see something
+// import the big crawled graph
+import rawGraph from "./graph.json";
+
+// ----------------- helpers to turn graph.json into ForceGraph data ---------
+
+// Very simple PageRank implementation in the browser
+function computePageRank(adj, iterations = 30, damping = 0.85) {
+    const nodes = Object.keys(adj);
+    const N = nodes.length;
+    const pr = {};
+    const outDegree = {};
+
+    nodes.forEach((n) => {
+        pr[n] = 1 / N;
+        outDegree[n] = (adj[n] && adj[n].length) || 0;
+    });
+
+    for (let it = 0; it < iterations; it++) {
+        const newPr = {};
+        nodes.forEach((n) => {
+            newPr[n] = (1 - damping) / N;
+        });
+
+        nodes.forEach((u) => {
+            const share = damping * pr[u];
+            if (outDegree[u] === 0) {
+                // distribute evenly to all nodes
+                const add = share / N;
+                nodes.forEach((v) => {
+                    newPr[v] += add;
+                });
+            } else {
+                const add = share / outDegree[u];
+                (adj[u] || []).forEach((v) => {
+                    if (!newPr[v]) newPr[v] = 0;
+                    newPr[v] += add;
+                });
+            }
+        });
+
+        Object.assign(pr, newPr);
+    }
+
+    return pr;
+}
+
+function buildForceGraphData(adj) {
+    const nodesMap = new Map();
+    const links = [];
+
+    const pr = computePageRank(adj);
+
+    for (const [src, targets] of Object.entries(adj)) {
+        if (!nodesMap.has(src)) {
+            nodesMap.set(src, {
+                id: src,
+                title: src,
+                pagerank: pr[src] || 0
+            });
+        }
+
+        (targets || []).forEach((dst) => {
+            if (!nodesMap.has(dst)) {
+                nodesMap.set(dst, {
+                    id: dst,
+                    title: dst,
+                    pagerank: pr[dst] || 0
+                });
+            }
+            links.push({ source: src, target: dst });
+        });
+    }
+
+    return {
+        nodes: Array.from(nodesMap.values()),
+        links
+    };
+}
+
+// Fallback tiny demo graph (if something goes wrong)
 const demoData = {
     nodes: [
         { id: "A", title: "Home", pagerank: 0.4 },
@@ -34,6 +113,19 @@ function App() {
     const [searchId, setSearchId] = useState("");
 
     const graphRef = useRef();
+
+    // load the big TUM graph.json once at startup
+    useEffect(() => {
+        try {
+            const built = buildForceGraphData(rawGraph.graph);
+            setData(built);
+            setError("");
+        } catch (e) {
+            console.error("Error building graph from graph.json", e);
+            setError("Could not load graph.json – showing demo graph.");
+            setData(demoData);
+        }
+    }, []);
 
     const {
         graphData,
@@ -113,6 +205,7 @@ function App() {
         setError("");
     };
 
+    // still here if you later connect to backend – currently it's a stub
     const handleCompute = async (e) => {
         e.preventDefault();
         setError("");
@@ -125,12 +218,11 @@ function App() {
         setLoading(true);
 
         try {
-            // TODO: backend call here
+            // TODO: backend call here if you want server-side PageRank
             await new Promise((r) => setTimeout(r, 800));
         } catch (err) {
             console.error(err);
-            setError("Backend not available – showing demo graph.");
-            setData(demoData);
+            setError("Backend error – keeping current graph.");
         } finally {
             setLoading(false);
         }
@@ -407,13 +499,10 @@ function App() {
                     >
                         Find node
                     </h2>
-                    <form
-                        onSubmit={handleSearch}
-                        style={{ display: "flex", gap: "0.4rem" }}
-                    >
+                    <form onSubmit={handleSearch} style={{ display: "flex", gap: "0.4rem" }}>
                         <input
                             type="text"
-                            placeholder="Node id, e.g. A"
+                            placeholder="Node id, e.g. https://www.tum.de"
                             value={searchId}
                             onChange={(e) => setSearchId(e.target.value)}
                             style={{
@@ -460,9 +549,14 @@ function App() {
                     <p style={{ margin: 0, fontSize: "0.8rem", color: "#9ca3af" }}>
                         Nodes: {data.nodes.length} • Edges: {data.links.length}
                     </p>
-                    <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem" }}>
-                        Hover a node to see its title and PageRank. Drag to explore, scroll
-                        to zoom.
+                    <p
+                        style={{
+                            margin: "0.15rem 0 0",
+                            fontSize: "0.8rem"
+                        }}
+                    >
+                        Hover a node to see its title and PageRank. Drag to explore, scroll to
+                        zoom.
                     </p>
                     <p
                         style={{
@@ -544,13 +638,11 @@ function App() {
                             </div>
                             <div style={{ marginTop: 6, color: "#9ca3af" }}>
                                 Incoming from:{" "}
-                                {Array.from(incoming.get(selectedNode.id) ?? []).join(", ") ||
-                                    "—"}
+                                {Array.from(incoming.get(selectedNode.id) ?? []).join(", ") || "—"}
                             </div>
                             <div style={{ marginTop: 2, color: "#9ca3af" }}>
                                 Outgoing to:{" "}
-                                {Array.from(outgoing.get(selectedNode.id) ?? []).join(", ") ||
-                                    "—"}
+                                {Array.from(outgoing.get(selectedNode.id) ?? []).join(", ") || "—"}
                             </div>
                         </div>
                     ) : (
@@ -599,8 +691,7 @@ function App() {
                                 color: "#9ca3af"
                             }}
                         >
-                            Node size ≈ PageRank score. Layout uses a force-directed
-                            simulation.
+                            Node size ≈ PageRank score. Layout uses a force-directed simulation.
                         </p>
                     </div>
                 </div>
@@ -619,9 +710,7 @@ function App() {
                         graphData={graphData}
                         backgroundColor="#050827"
                         nodeRelSize={6}
-                        nodeVal={(node) =>
-                            (node.pagerank != null ? node.pagerank : 0.05) * 8
-                        }
+                        nodeVal={(node) => 4 + (node.pagerank || 0) * 200}
                         onNodeHover={(node) => setHoverNode(node || null)}
                         onNodeClick={(node) => {
                             setSelectedNode(node);
@@ -641,9 +730,7 @@ function App() {
                                 return "#facc15";
                             }
                             if (!hoverNode) return base;
-                            return isNodeHighlighted(node)
-                                ? base
-                                : "rgba(148,163,184,0.25)";
+                            return isNodeHighlighted(node) ? base : "rgba(148,163,184,0.25)";
                         }}
                         linkColor={(link) => {
                             if (!hoverNode) return "rgba(148,163,184,0.35)";
