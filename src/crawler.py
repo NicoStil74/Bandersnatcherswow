@@ -44,11 +44,11 @@ def normalize_url(parsed):
 def is_valid_link(clean, domain):
     """Check if the cleaned link should be considered at all."""
     
-    # Skip files by extension
+    # 
     if clean.endswith(SKIP_EXTENSIONS):
         return False
 
-    # Only crawl internal pages
+    # crawl internal pages 
     parsed = urlparse(clean)
     if parsed.netloc != domain:
         return False
@@ -103,8 +103,8 @@ def crawl_mvp(start_url, max_pages=10):
                 continue
 
             # Skip known navigation links
-            if clean in COMMON_NAV_LINKS:
-                continue
+            #if clean in COMMON_NAV_LINKS:
+            #    continue
 
             # Only internal & valid links
             if not is_valid_link(clean, domain):
@@ -119,7 +119,10 @@ def crawl_mvp(start_url, max_pages=10):
 
     # Convert sets to lists for JSON
     graph = {k: list(v) for k, v in graph.items()}
-    return graph
+    return graph, {
+        "max_pages":max_pages, 
+        "pages_crawled":len(visited)
+    }
 
 
 # Run the crawler
@@ -131,7 +134,7 @@ if __name__ == "__main__":
 
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(current_dir, "graph.json")
+    output_path = os.path.join(current_dir + "/graph_sources", "graph.json")
 
 
     with open(output_path, "w") as f:
