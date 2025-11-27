@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>search.TUM</title>
+    <style>
+        /* 🎨 CSS Variables for Modern Color Palette */
+        :root {
+            --color-bg-dark: #0c386e; /* Original Dark Blue */
+            --color-primary-accent: #3b82f6; /* Modern Blue Accent */
+            --color-secondary-bg: rgba(255, 255, 255, 0.08); /* Transparent Card Background */
+            --color-text-light: #f3f4f6;
+            --color-text-link: #93c5fd;
+            --color-input-bg: #1f2937; /* Darker Input Field */
+            --color-separator: rgba(255, 255, 255, 0.15); /* Subtle white for separation */
+        }
+
+        /* 🌐 Global Styling and Modern Typography */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Arial', sans-serif; 
+            background-color: var(--color-bg-dark);
+            background-image: linear-gradient(135deg, #0c386e 0%, #175494 100%); 
+            color: var(--color-text-light);
+            min-height: 100vh; 
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 👑 Header/Title Styling */
+        header {
+            text-align: center;
+            padding: 40px 0 20px 0; 
+            font-size: 3em; /* Base font size for header */
+            font-weight: 800; 
+            letter-spacing: -1px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            color: var(--color-text-light); /* Ensure text color is consistent */
+        }
+
+        header .text-prefix {
+            margin-right: 8px; /* Space between "search." and the logo */
+            /* These properties ensure 'search.' matches the header's base style */
+            font-size: 1em; /* This ensures it inherits the 3em from header */
+            font-weight: inherit;
+            letter-spacing: inherit;
+        }
+
+        header .tum-logo {
+            height: 0.9em; /* ADJUSTED: Slightly smaller to visually match text height better */
+            width: auto; 
+            vertical-align: middle; 
+            /* REMOVED: filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2)); */ 
+            /* Optional: if the logo itself is slightly darker, you might add a subtle filter to lighten it
+               e.g., filter: brightness(1.1); */
+        }
+
+        /* 🖼️ Main Layout Container (Using larger gaps and max-width) */
+        .container {
+            display: flex;
+            padding: 30px; 
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 30px; 
+            flex-grow: 1; 
+            width: 100%; 
+        }
+
+        /* 📦 Card Styling (Applied to columns and results/graph) */
+        .card {
+            padding: 25px; 
+            border-radius: 16px; 
+            background-color: var(--color-secondary-bg);
+            backdrop-filter: blur(8px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 🔎 Left Column (Search Bar and Results) - WIDER */
+        .left-column {
+            flex: 2; 
+            min-width: 400px;
+        }
+
+        /* 📊 Right Column (Graph Visualization) - NARROWER */
+        .right-column {
+            flex: 1; 
+        }
+
+        /* 🔍 Search Bar Styling */
+        #search-bar {
+            width: 100%;
+            padding: 15px 20px; 
+            margin-bottom: 25px;
+            border: none;
+            border-radius: 10px; 
+            font-size: 1.1em;
+            box-sizing: border-box;
+            background-color: var(--color-input-bg);
+            color: var(--color-text-light);
+            transition: box-shadow 0.2s, background-color 0.2s;
+        }
+
+        #search-bar:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--color-primary-accent); 
+            background-color: #2c3748;
+        }
+        
+        /* 📑 Results Area Styling */
+        #search-results {
+            min-height: 400px;
+            padding: 10px 0; 
+            overflow-y: auto;
+        }
+        
+        /* 🔗 Individual Result Item Styling - UPDATED FOR SEPARATION */
+        .result-item {
+            margin-bottom: 20px; 
+            padding: 15px 0 20px 0; 
+            border-bottom: 1px solid var(--color-separator); 
+            background-color: transparent; 
+            border-radius: 0; 
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        
+        /* Remove border from the last item in the list */
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .result-item:hover {
+            background-color: rgba(255, 255, 255, 0.05); 
+            transform: none; 
+        }
+
+        .result-item a {
+            color: var(--color-text-link); 
+            text-decoration: none;
+            font-weight: 600;
+            display: block; 
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .result-item p {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+        }
+
+        /* 📊 Graph Area Styling */
+        #graph-area {
+            height: 500px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 1em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* 🦶 Footer Styling */
+        footer {
+            background-color: rgba(0, 0, 0, 0.2); 
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 0.85em;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 40px; 
+        }
+
+        footer a {
+            color: var(--color-text-light);
+            text-decoration: none;
+            margin: 0 20px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        footer a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <span class="text-prefix">search.TUM</span>
+        <!---- <img src="/images/tum_logo.png" alt="TUM Logo" class="tum-logo">  -->
+    </header>
+    
+    <div class="container">
+        <div class="left-column card">
+            <h2>Keyword Search</h2>
+            <input type="text" id="search-bar" placeholder="Enter keywords to search the TUM website...">
+            
+            <h3>Results</h3>
+            <div id="search-results">
+                <p style="margin-bottom: 15px; font-style: italic; color: rgba(255, 255, 255, 0.7);">Latest indexed results:</p>
+                
+                <div class="result-item">
+                    <a href="https://www.tum.de/en/studies" target="_blank">TUM: Study Programs & Admissions 🎓</a>
+                    <p>Discover Bachelor's and Master's courses, application deadlines, and student resources...</p>
+                </div>
+                
+                <div class="result-item">
+                    <a href="https://www.in.tum.de/en/" target="_blank">Informatics Department (TUM)</a>
+                    <p>Access research areas, faculty profiles, and computing resources at the Garching campus...</p>
+                </div>
+                
+                <div class="result-item">
+                    <a href="https://www.tum.de/en/about-tum/news-and-events" target="_blank">TUM News & Events</a>
+                    <p>Latest press releases, upcoming scientific conferences, and campus happenings...</p>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="right-column card">
+            <h2>Explore Page Connections</h2>
+            <div id="graph-area">
+                <p style="text-align: center; padding: 100px 0;">
+                    <span style="font-weight: bold; color: var(--color-primary-accent);">Dynamic Link Map</span><br>
+                    (Rendered using Force-Directed Graph simulation)<br>
+                    <br>
+                    <img src="https://via.placeholder.com/250x150?text=Graph+Visualization" alt="Graph Placeholder" style="margin-top: 20px; border-radius: 8px;">
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        &copy; search.TUM | 
+        <a href="#">Imprint (Impressum)</a> | 
+        <a href="#">Privacy Policy</a> | 
+        <a href="#">Terms of Use</a>
+    </footer>
+    
+    <script>
+        const searchBar = document.getElementById('search-bar');
+        const resultsDiv = document.getElementById('search-results');
+
+        searchBar.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                const query = searchBar.value.trim();
+                if (query) {
+                    // Display a simulated result
+                    resultsDiv.innerHTML = `
+                        <p style="margin-bottom: 15px; font-style: italic; color: rgba(255, 255, 255, 0.7);">Searching for: "${query}"</p>
+                        <div class="result-item">
+                            <a href="#" onclick="alert('Simulated link for: ${query}')">Result 1: Top Match for "${query}"</a>
+                            <p>This is a simulated description detailing relevance to your search query...</p>
+                        </div>
+                        <div class="result-item">
+                            <a href="#" onclick="alert('Simulated link for: ${query}')">Result 2: Related Topic</a>
+                            <p>A second simulated result on a highly related subject...</p>
+                        </div>
+                        <p style="margin-top: 25px; font-size: 0.9em; color: rgba(255, 255, 255, 0.6);">* Real-time search and graph analysis requires a powerful backend API.</p>
+                    `;
+                } else {
+                    // Reset to initial placeholders
+                     resultsDiv.innerHTML = `
+                        <p style="margin-bottom: 15px; font-style: italic; color: rgba(255, 255, 255, 0.7);">Latest indexed results:</p>
+                        <div class="result-item">
+                            <a href="https://www.tum.de/en/studies" target="_blank">TUM: Study Programs & Admissions 🎓</a>
+                            <p>Discover Bachelor's and Master's courses, application deadlines, and student resources...</p>
+                        </div>
+                    `;
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
