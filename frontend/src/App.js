@@ -1,3 +1,4 @@
+import logo from "./assets/TUMSEARCH.png";
 import React, { useState, useMemo, useRef } from "react";
 import "./App.css";
 import ForceGraph2D from "react-force-graph-2d";
@@ -28,14 +29,12 @@ function App() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // interaction state
     const [hoverNode, setHoverNode] = useState(null);
     const [selectedNode, setSelectedNode] = useState(null);
     const [searchId, setSearchId] = useState("");
 
     const graphRef = useRef();
 
-    // Graph data + helper maps (neighbors, ranks, degrees, etc.)
     const {
         graphData,
         neighbors,
@@ -126,19 +125,7 @@ function App() {
         setLoading(true);
 
         try {
-            // TODO: plug in your real backend here:
-            //
-            // const formData = new FormData();
-            // if (file) formData.append("file", file);
-            // if (url.trim()) formData.append("url", url.trim());
-            // const res = await fetch("http://localhost:8000/pagerank", {
-            //   method: "POST",
-            //   body: formData
-            // });
-            // const json = await res.json();
-            // setData(json);
-            //
-            // For now, just fake a delay and keep demoData:
+            // TODO: backend call here
             await new Promise((r) => setTimeout(r, 800));
         } catch (err) {
             console.error(err);
@@ -154,7 +141,6 @@ function App() {
         setError("");
     };
 
-    // Helper: is node highlighted (hovered or neighbor)?
     const isNodeHighlighted = (node) => {
         if (!hoverNode) return false;
         if (node.id === hoverNode.id) return true;
@@ -162,7 +148,6 @@ function App() {
         return neigh?.has(node.id);
     };
 
-    // Helper: is link highlighted (touches hovered node)?
     const isLinkHighlighted = (link) => {
         if (!hoverNode) return false;
         const src = typeof link.source === "object" ? link.source.id : link.source;
@@ -170,12 +155,11 @@ function App() {
         return src === hoverNode.id || tgt === hoverNode.id;
     };
 
-    // PageRank heatmap color (blue -> yellow)
     const getNodeBaseColor = (node) => {
         const pr = node.pagerank ?? 0;
         if (maxPR === minPR) return "#e5e7eb";
         const t = (pr - minPR) / (maxPR - minPR); // 0..1
-        const hue = 220 + (45 - 220) * t; // blue to yellow
+        const hue = 220 + (45 - 220) * t; // blue → yellow
         const light = 58 + 10 * t;
         return `hsl(${hue}, 85%, ${light}%)`;
     };
@@ -219,7 +203,7 @@ function App() {
                     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
             }}
         >
-            {/* SIDEBAR (same layout, more sections) */}
+            {/* SIDEBAR */}
             <aside
                 style={{
                     width: 320,
@@ -234,18 +218,35 @@ function App() {
                     boxSizing: "border-box"
                 }}
             >
-                <div>
-                    <h1 style={{ margin: 0, fontSize: "1.6rem" }}>PageRank Explorer</h1>
-                    <p
+                {/* HEADER WITH LOGO */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.9rem"
+                    }}
+                >
+                    <img
+                        src={logo}
+                        alt="TUMSearch logo"
                         style={{
-                            marginTop: "0.3rem",
-                            fontSize: "0.9rem",
-                            color: "#cbd5f5"
+                            height: 85,
+                            objectFit: "contain",
+                            marginLeft: "-0.3rem"
                         }}
-                    >
-                        Interactive visualization of graph importance using the PageRank
-                        algorithm.
-                    </p>
+                    />
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: "1.65rem" }}>TUMSearch</h1>
+                        <p
+                            style={{
+                                marginTop: "0.15rem",
+                                fontSize: "0.9rem",
+                                color: "#cbd5f5"
+                            }}
+                        >
+                            PageRank Explorer
+                        </p>
+                    </div>
                 </div>
 
                 {/* INPUT GRAPH */}
@@ -362,7 +363,7 @@ function App() {
                                 borderRadius: 999,
                                 border: "none",
                                 background:
-                                    "linear-gradient(135deg, #38bdf8 0%, #6366f1 40%, #a855f7 100%)",
+                                    "linear-gradient(135deg, #38bdf8 0, #6366f1 40%, #a855f7 100%)",
                                 color: "#f9fafb",
                                 fontWeight: 500,
                                 fontSize: "0.9rem",
@@ -617,14 +618,11 @@ function App() {
                         ref={graphRef}
                         graphData={graphData}
                         backgroundColor="#050827"
-                        // Node size: proportional to PageRank, not insane
-                        nodeRelSize={7}
+                        nodeRelSize={6}
                         nodeVal={(node) =>
-                            (node.pagerank != null ? node.pagerank : 0.05) * 18
+                            (node.pagerank != null ? node.pagerank : 0.05) * 8
                         }
-                        // Hover behavior
                         onNodeHover={(node) => setHoverNode(node || null)}
-                        // Click selects node + focuses camera
                         onNodeClick={(node) => {
                             setSelectedNode(node);
                             setHoverNode(node);
@@ -639,7 +637,6 @@ function App() {
                         }
                         nodeColor={(node) => {
                             const base = getNodeBaseColor(node);
-                            // always highlight selected node
                             if (selectedNode && selectedNode.id === node.id) {
                                 return "#facc15";
                             }
