@@ -328,3 +328,148 @@
 8.  **0.00256**	~/mitarbeitende
 9.  **0.00256**	~/studium/studienangebot/key-skill-programs
 10. **0.00256**	~/studium/bewerbung/infoportal-bewerbung/termine-und-fristen
+
+## Top 10 PageRank results
+2025-11-27 13:15
+- **Max pages:** 100
+- **Pages crawled:** 100
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.00144**	~/innovation/entrepreneurship/forschung
+2. **0.00144**	~/studium/lehre/qualitaetsmanagement/systemakkreditierung
+3. **0.00144**	~/studium/lehre/qualitaetsmanagement/evaluation
+4. **0.00144**	~/studium/lehre/chancen-fuer-die-lehre/lehrfonds
+5. **0.00144**	~/innovation/entrepreneurship/fuer-gruendungsinteressierte/gruendungsbotschafterinnen
+6. **0.00144**	~/studium/hilfe-und-beratung/hilfe-im-studium/studieninformation
+7. **0.00144**	~/community/globales-netzwerk
+8. **0.00144**	~/studium/lehre/didaktik/lehre-gestalten
+9. **0.00144**	~/studium/lehre/chancen-fuer-die-lehre/ideenwettbewerb-archiv
+10. **0.00144**	~/ueber-die-tum/ziele-und-werte
+
+## Top 10 PageRank results
+2025-11-27 13:39
+- **Max pages:** 1000
+- **Pages crawled:** 1000
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.00172**	~/aktuelles/veranstaltungen/terminuebersicht
+2. **0.00172**	~/studium/lehre/
+3. **0.00161**	~/ueber-die-tum/daten-und-fakten
+4. **0.00161**	~/
+5. **0.00161**	~/studium/von-der-schule-zur-universitaet
+6. **0.00161**	~/innovation/entrepreneurship
+7. **0.00161**	~/studium/studienangebot
+8. **0.00161**	~/forschung/forschungsziele/materialien-und-fertigungstechnologien/energie
+9. **0.00161**	~/ueber-die-tum/karriere-und-jobs/berufungen
+10. **0.00161**	~/aktuelles
+
+## Top 10 PageRank results
+2025-11-27 13:44
+- **Total time:** 3.427438974380493
+- **Max pages:** 10
+- **Pages crawled:** 10
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.00256**	~/forschung/forschungsziele/technik-und-gesellschaft
+2. **0.00256**	~/studium/im-studium/erfolgreich-lernen/lernraeume
+3. **0.00256**	~/studium/bewerbung/studienformen/doppelstudium
+4. **0.00256**	~/ueber-die-tum/organisation/hochschulpraesidium/berufungen
+5. **0.00256**	~/studium/bewerbung/infoportal-bewerbung/dokumentenglossar
+6. **0.00256**	~/fach-und-fuehrungskraefte
+7. **0.00256**	~/studium/studienabschluss/verifikation-von-abschluessen
+8. **0.00256**	~/studium/bewerbung/infoportal-bewerbung/zulassungsvoraussetzungen/sprachnachweise
+9. **0.00256**	~/studium/bewerbung/infoportal-einschreibung/rueckstellung-eines-studienplatzes
+10. **0.00256**	~/community/campusleben/student-clubs
+
+## Top 10 PageRank results
+2025-11-27 13:46
+- **Total time:** 3.59 min. 
+- **Max pages:** 10
+- **Pages crawled:** 10
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.00256**	~/studium/im-studium/wohnen-und-arbeiten/jobs-und-praktika
+2. **0.00256**	~/ueber-die-tum/karriere-und-jobs/berufungen
+3. **0.00256**	~/studium/von-der-schule-zur-universitaet/angebote-fuer-studieninteressierte/vorlesungen-erleben
+4. **0.00256**	~/ueber-die-tum/karriere-und-jobs/berufungen/tum-faculty-tenure-track
+5. **0.00256**	~/studium/hilfe-und-beratung/gesundheit/studieren-mit-behinderung
+6. **0.00256**	~/studium/von-der-schule-zur-universitaet/angebote-fuer-studieninteressierte
+7. **0.00256**	~/ueber-die-tum/daten-und-fakten/rankings
+8. **0.00256**	~/ueber-die-tum/daten-und-fakten/preise-auszeichnungen/ieee-fellows
+9. **0.00256**	~/studium/im-studium/das-studium-organisieren/pruefungen-und-ergebnisse
+10. **0.00256**	~/studium/von-der-schule-zur-universitaet/angebote-fuer-studieninteressierte/meet-a-student
+
+## Top 10 PageRank results
+2025-11-27 13:46
+- **Total time:** 3.59 sec. 
+- **Max pages:** 10
+- **Pages crawled:** 10
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.00256**	~/studium/im-studium/wohnen-und-arbeiten/jobs-und-praktika
+2. **0.00256**	~/ueber-die-tum/karriere-und-jobs/berufungen
+3. **0.00256**	~/studium/von-der-schule-zur-universitaet/angebote-fuer-studieninteressierte/vorlesungen-erleben
+4. **0.00256**	~/ueber-die-tum/karriere-und-jobs/berufungen/tum-faculty-tenure-track
+5. **0.00256**	~/studium/hilfe-und-beratung/gesundheit/studieren-mit-behinderung
+6. **0.00256**	~/studium/von-der-schule-zur-universitaet/angebote-fuer-studieninteressierte
+7. **0.00256**	~/ueber-die-tum/daten-und-fakten/rankings
+8. **0.00256**	~/ueber-die-tum/daten-und-fakten/preise-auszeichnungen/ieee-fellows
+9. **0.00256**	~/studium/im-studium/das-studium-organisieren/pruefungen-und-ergebnisse
+10. **0.00256**	~/studium/von-der-schule-zur-universitaet/angebote-fuer-studieninteressierte/meet-a-student
+
+## Top 10 PageRank results
+2025-11-27 14:18
+- **Total time:** 3.21 sec. 
+- **Max pages:** 10
+- **Pages crawled:** 10
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.03446**	~/aktuelles/veranstaltungen/terminuebersicht
+2. **0.01574**	~/aktuelles/veranstaltungen/adventskonzerte
+3. **0.01574**	~/aktuelles/veranstaltungen/dies-academicus
+4. **0.01479**	~/aktuelles/alle-meldungen
+5. **0.01450**	~/news.rss
+6. **0.01415**	~/innovation/entrepreneurship/fuer-gruenderinnen-start-ups
+7. **0.01415**	~/innovation/entrepreneurship/news-events/tum-ideaward
+8. **0.01356**	~/presse
+9. **0.01321**	~/aktuelles/alle-meldungen?tx_news_pi1[overwriteDemand][filteredCategories][]=422&no_cache=1
+10. **0.01276**	~/aktuelles/alle-meldungen?tx_news_pi1[overwriteDemand][filteredCategories][]=285&no_cache=1
+
+## Top 10 PageRank results
+2025-11-27 14:23
+- **Total time:** 72.76 sec. 
+- **Max pages:** 100
+- **Pages crawled:** 100
+- **Start URL:** https://www.tum.de
+- **Skip Prefixes:** ['mailto:', 'tel:', 'javascript:', '#']
+- **Skip Extensions:** ['.pdf', '.jpg', '.png', '.jpeg', '.svg', '.gif', '.zip', '.doc', '.docx', '.xlsx', '.xls', '.pptx', '.ppt', '.ics']
+---
+
+1. **0.03037**	~/aktuelles/veranstaltungen/terminuebersicht
+2. **0.00726**	~/aktuelles/alle-meldungen
+3. **0.00681**	~/spezialseiten/datenschutz
+4. **0.00669**	~/news.rss
+5. **0.00634**	~/presse
+6. **0.00550**	~/community/campusleben/musik-und-kunst/center-for-culture-and-arts
+7. **0.00463**	~/aktuelles/alle-meldungen?tx_news_pi1[overwriteDemand][filteredCategories][]=285&no_cache=1
+8. **0.00407**	~/aktuelles/magazin
+9. **0.00407**	~/community/campusleben/student-clubs
+10. **0.00374**	~/studium/studienangebot

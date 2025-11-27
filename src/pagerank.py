@@ -19,6 +19,9 @@ crawl_info = data["crawl_info"]    # metadata
 max_pages = crawl_info["max_pages"]
 pages_crawled = crawl_info["pages_crawled"]
 start_url = crawl_info["start_url"]
+skip_prefixes = crawl_info["SKIP_PREFIXES"]
+skip_extensions = crawl_info["SKIP_EXTENSIONS"]
+totalTime = crawl_info["total_time"]
 
 # Build directed graph
 G = nx.DiGraph()
@@ -37,14 +40,21 @@ top10 = sorted_pr[:10]
 lines = [
     "## Top 10 PageRank results\n",
    f"{str(datetime.now())[:16]}\n",
+    f"- **Total time:** {round(totalTime, 2)} sec. \n",
     f"- **Max pages:** {max_pages}\n",
     f"- **Pages crawled:** {pages_crawled}\n",
     f"- **Start URL:** {start_url}\n",
+    f"- **Skip Prefixes:** {skip_prefixes}\n",
+    f"- **Skip Extensions:** {skip_extensions}\n",
     "---\n\n"
 ]
 
-for i, (page, score) in enumerate(top10, 0):
-    lines.append(f"{i}. **{score:.5f}**\t~{str(page)[18:]}\n")
+for i, (page, score) in enumerate(top10, 1):
+   if(i == 10):
+      lines.append(f"{i}. **{score:.5f}**\t~{str(page)[18:]}\n")
+   else:
+      lines.append(f"{i}. **{score:.5f}**\t~{str(page)[18:]}\n")
+      
 
 # Write markdown
 with open(output_path_md, "a", encoding="utf-8") as f:

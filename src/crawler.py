@@ -3,15 +3,15 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 import json
 import os
+import time
 
 
-
-max_pages = 30
-
+max_pages = 100
+startTime = time.time()
 
 # Hard skip rules
 SKIP_PREFIXES = (
-    "mailto:", "tel:", "javascript:", "#", ":", " "
+    "mailto:", "tel:", "javascript:", "#"
 )
 
 SKIP_EXTENSIONS = (
@@ -45,6 +45,7 @@ def normalize_url(parsed):
     if KEEP_QUERY and parsed.query:
         return base + "?" + parsed.query
     return base
+
 
 def is_valid_link(clean, domain):
     """Check if the cleaned link should be considered at all."""
@@ -88,7 +89,7 @@ def crawl_mvp(start_url, max_pages):
         soup = BeautifulSoup(response.text, "html.parser")
 
         # Extract all links
-        for a in soup.find_all("a", href=True):
+        for a in soup.select("main a[href]"):
             raw = a["href"]
 
             # Skip anchor, mailto, javascript, weird stuff
@@ -100,7 +101,9 @@ def crawl_mvp(start_url, max_pages):
             parsed = urlparse(link)
 
             # Clean it
-            clean = normalize_url(parsed)
+            clean = parsed.scheme + "://" + parsed.netloc + parsed.path
+            if parsed.query:
+                clean += "?" + parsed.query
 
             # Self-loop
             if clean == url:
@@ -126,12 +129,12 @@ def crawl_mvp(start_url, max_pages):
     return graph
 
 
-# Run the crawler
+
 if __name__ == "__main__":
     start = "https://www.tum.de"
 
 
-    # Run your crawler
+    
     result = crawl_mvp(start, max_pages)
 
     print("\nUnique pages:", len(result))
@@ -139,17 +142,20 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(current_dir, "graph_sources", "graph.json")
 
-    # Build the JSON object containing graph + metadata
+    # grah + metadata
     data = {
         "graph": result,        # <- your crawled graph
         "crawl_info": {
             "max_pages": max_pages,
             "pages_crawled": len(result),
-            "start_url": start
+            "start_url": start,
+            "SKIP_PREFIXES": SKIP_PREFIXES,
+            "SKIP_EXTENSIONS": SKIP_EXTENSIONS,
+            "total_time": (time.time()-startTime)
         }
     }
 
-    # Write to graph.json
+    # rite to graph.json
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2)
 
