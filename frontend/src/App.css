@@ -1,0 +1,225 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+    background: #020617;
+    color: #e5e7eb;
+}
+
+.app {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+
+.sidebar {
+    width: 280px;
+    padding: 1.75rem 1.5rem;
+    background: radial-gradient(circle at top left, #1d243f, #020617);
+    color: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    border-right: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.sidebar h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+}
+
+.sidebar p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: #cbd5f5;
+}
+
+.sidebar-section h2 {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+}
+
+.sidebar-section form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.field span {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.field input[type="file"],
+.field input[type="url"] {
+    padding: 0.45rem 0.55rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.8);
+    background: rgba(15, 23, 42, 0.8);
+    color: #e5e7eb;
+    font-size: 0.85rem;
+}
+
+.field input[type="url"]:focus {
+    outline: none;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+}
+
+small {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.35rem 0;
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(148, 163, 184, 0.4);
+}
+
+.error {
+    margin-top: 0.3rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.5rem;
+    background: rgba(248, 113, 113, 0.12);
+    color: #fecaca;
+    font-size: 0.8rem;
+}
+
+.primary-btn {
+    margin-top: 0.4rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #38bdf8, #6366f1);
+    color: #f9fafb;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.35);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.primary-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 35px rgba(37, 99, 235, 0.45);
+}
+
+.primary-btn:disabled {
+    background: #4b5563;
+    box-shadow: none;
+    cursor: default;
+}
+
+.muted {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+/* Main layout */
+
+.main {
+    flex: 1;
+    padding: 1.5rem 1.75rem;
+    display: grid;
+    grid-template-columns: 2fr 1.4fr;
+    grid-template-rows: minmax(0, 1fr);
+    gap: 1.25rem;
+    background: radial-gradient(circle at top, #111827, #020617 55%);
+}
+
+.card {
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 0.85rem;
+    padding: 0.9rem 1.1rem 1rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.8);
+    display: flex;
+    flex-direction: column;
+}
+
+.card h2 {
+    margin-top: 0.1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+}
+
+/* Graph */
+
+.graph-card {
+    min-height: 0;
+}
+
+.graph-wrapper {
+    flex: 1;
+    min-height: 420px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgba(51, 65, 85, 0.9);
+}
+
+/* Table */
+
+.results-card {
+    min-height: 0;
+}
+
+.table-wrapper {
+    margin-top: 0.4rem;
+    max-height: 460px;
+    overflow: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+th,
+td {
+    padding: 0.45rem 0.4rem;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+}
+
+th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+}
+
+tbody tr:nth-child(even) td {
+    background: rgba(15, 23, 42, 0.85);
+}
