@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Graph Visualizer</title>
+
+  <!-- Cytoscape.js -->
+  <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+
+  <!-- Your scripts -->
+  <script src="visualizer.js"></script>
+  <script src="parser.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    #cy {
+      width: 100%;
+      height: 600px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>Graph Visualizer</h2>
+  <p>Upload a simple edge list file like: <code>A B</code></p>
+
+  <input type="file" id="fileInput">
+  <button onclick="loadGraph()">Load Graph</button>
+
+  <div id="cy"></div>
+
+  <script>
+    function loadGraph() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) {
+        alert("Please select a file.");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const graph = parseEdgeList(text);
+        renderGraph(graph);
+      };
+
+      reader.readAsText(file);
+    }
+  </script>
+
+</body>
+</html>
