@@ -1,0 +1,669 @@
+import React, { useState, useMemo, useRef } from "react";
+import "./App.css";
+import ForceGraph2D from "react-force-graph-2d";
+
+// Demo graph so you always see something
+const demoData = {
+    nodes: [
+        { id: "A", title: "Home", pagerank: 0.4 },
+        { id: "B", title: "About", pagerank: 0.2 },
+        { id: "C", title: "Contact", pagerank: 0.15 },
+        { id: "D", title: "Blog", pagerank: 0.1 },
+        { id: "E", title: "FAQ", pagerank: 0.08 }
+    ],
+    links: [
+        { source: "A", target: "B" },
+        { source: "A", target: "C" },
+        { source: "B", target: "D" },
+        { source: "C", target: "D" },
+        { source: "D", target: "E" },
+        { source: "E", target: "A" }
+    ]
+};
+
+function App() {
+    const [fileName, setFileName] = useState("");
+    const [url, setUrl] = useState("");
+    const [data, setData] = useState(demoData);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    // interaction state
+    const [hoverNode, setHoverNode] = useState(null);
+    const [selectedNode, setSelectedNode] = useState(null);
+    const [searchId, setSearchId] = useState("");
+
+    const graphRef = useRef();
+
+    // Graph data + helper maps (neighbors, ranks, degrees, etc.)
+    const {
+        graphData,
+        neighbors,
+        sortedNodes,
+        maxPR,
+        minPR,
+        nodeById,
+        inDegree,
+        outDegree,
+        incoming,
+        outgoing
+    } = useMemo(() => {
+        const neighbors = new Map();
+        const nodeById = new Map();
+
+        const inDegree = new Map();
+        const outDegree = new Map();
+        const incoming = new Map();
+        const outgoing = new Map();
+
+        let maxPR = -Infinity;
+        let minPR = Infinity;
+
+        data.nodes.forEach((n) => {
+            neighbors.set(n.id, new Set());
+            nodeById.set(n.id, n);
+
+            inDegree.set(n.id, 0);
+            outDegree.set(n.id, 0);
+            incoming.set(n.id, new Set());
+            outgoing.set(n.id, new Set());
+
+            const pr = n.pagerank ?? 0;
+            if (pr > maxPR) maxPR = pr;
+            if (pr < minPR) minPR = pr;
+        });
+
+        data.links.forEach((l) => {
+            const src = typeof l.source === "object" ? l.source.id : l.source;
+            const tgt = typeof l.target === "object" ? l.target.id : l.target;
+
+            if (neighbors.has(src)) neighbors.get(src).add(tgt);
+            if (neighbors.has(tgt)) neighbors.get(tgt).add(src);
+
+            if (outDegree.has(src)) outDegree.set(src, outDegree.get(src) + 1);
+            if (inDegree.has(tgt)) inDegree.set(tgt, inDegree.get(tgt) + 1);
+
+            if (outgoing.has(src)) outgoing.get(src).add(tgt);
+            if (incoming.has(tgt)) incoming.get(tgt).add(src);
+        });
+
+        if (!isFinite(maxPR)) maxPR = 0.0001;
+        if (!isFinite(minPR)) minPR = 0;
+
+        const sortedNodes = [...data.nodes].sort(
+            (a, b) => (b.pagerank ?? 0) - (a.pagerank ?? 0)
+        );
+
+        return {
+            graphData: data,
+            neighbors,
+            sortedNodes,
+            maxPR,
+            minPR,
+            nodeById,
+            inDegree,
+            outDegree,
+            incoming,
+            outgoing
+        };
+    }, [data]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        setFileName(file ? file.name : "");
+        setError("");
+    };
+
+    const handleCompute = async (e) => {
+        e.preventDefault();
+        setError("");
+
+        if (!fileName && !url.trim()) {
+            setError("Please upload a graph file or enter a URL.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // TODO: plug in your real backend here:
+            //
+            // const formData = new FormData();
+            // if (file) formData.append("file", file);
+            // if (url.trim()) formData.append("url", url.trim());
+            // const res = await fetch("http://localhost:8000/pagerank", {
+            //   method: "POST",
+            //   body: formData
+            // });
+            // const json = await res.json();
+            // setData(json);
+            //
+            // For now, just fake a delay and keep demoData:
+            await new Promise((r) => setTimeout(r, 800));
+        } catch (err) {
+            console.error(err);
+            setError("Backend not available – showing demo graph.");
+            setData(demoData);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUseDemo = () => {
+        setData(demoData);
+        setError("");
+    };
+
+    // Helper: is node highlighted (hovered or neighbor)?
+    const isNodeHighlighted = (node) => {
+        if (!hoverNode) return false;
+        if (node.id === hoverNode.id) return true;
+        const neigh = neighbors.get(hoverNode.id);
+        return neigh?.has(node.id);
+    };
+
+    // Helper: is link highlighted (touches hovered node)?
+    const isLinkHighlighted = (link) => {
+        if (!hoverNode) return false;
+        const src = typeof link.source === "object" ? link.source.id : link.source;
+        const tgt = typeof link.target === "object" ? link.target.id : link.target;
+        return src === hoverNode.id || tgt === hoverNode.id;
+    };
+
+    // PageRank heatmap color (blue -> yellow)
+    const getNodeBaseColor = (node) => {
+        const pr = node.pagerank ?? 0;
+        if (maxPR === minPR) return "#e5e7eb";
+        const t = (pr - minPR) / (maxPR - minPR); // 0..1
+        const hue = 220 + (45 - 220) * t; // blue to yellow
+        const light = 58 + 10 * t;
+        return `hsl(${hue}, 85%, ${light}%)`;
+    };
+
+    const focusOnNode = (node) => {
+        if (!node || !graphRef.current) return;
+        if (typeof node.x !== "number" || typeof node.y !== "number") return;
+
+        graphRef.current.centerAt(node.x, node.y, 600);
+        graphRef.current.zoom(4, 600);
+    };
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        const id = searchId.trim();
+        if (!id) return;
+
+        const node = nodeById.get(id);
+        if (!node) {
+            setError(`Node "${id}" not found in current graph.`);
+            return;
+        }
+
+        setError("");
+        setSelectedNode(node);
+        setHoverNode(node);
+        focusOnNode(node);
+    };
+
+    const topNodes = sortedNodes.slice(0, 5);
+
+    return (
+        <div
+            style={{
+                display: "flex",
+                minHeight: "100vh",
+                background:
+                    "radial-gradient(circle at top, #111827 0, #020617 45%, #020617 100%)",
+                color: "#e5e7eb",
+                fontFamily:
+                    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+            }}
+        >
+            {/* SIDEBAR (same layout, more sections) */}
+            <aside
+                style={{
+                    width: 320,
+                    flexShrink: 0,
+                    padding: "1.75rem 1.5rem",
+                    borderRight: "1px solid rgba(148,163,184,0.3)",
+                    background:
+                        "radial-gradient(circle at top left, #1f2937 0, #020617 60%)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1.5rem",
+                    boxSizing: "border-box"
+                }}
+            >
+                <div>
+                    <h1 style={{ margin: 0, fontSize: "1.6rem" }}>PageRank Explorer</h1>
+                    <p
+                        style={{
+                            marginTop: "0.3rem",
+                            fontSize: "0.9rem",
+                            color: "#cbd5f5"
+                        }}
+                    >
+                        Interactive visualization of graph importance using the PageRank
+                        algorithm.
+                    </p>
+                </div>
+
+                {/* INPUT GRAPH */}
+                <section>
+                    <h2
+                        style={{
+                            fontSize: "0.85rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                            marginBottom: "0.4rem",
+                            color: "#9ca3af"
+                        }}
+                    >
+                        Input graph
+                    </h2>
+
+                    <form
+                        onSubmit={handleCompute}
+                        style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}
+                    >
+                        <label style={{ fontSize: "0.85rem" }}>
+              <span style={{ display: "block", marginBottom: 4 }}>
+                Upload adjacency list / edge list
+              </span>
+                            <input
+                                type="file"
+                                onChange={handleFileChange}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.4rem 0.5rem",
+                                    borderRadius: 8,
+                                    border: "1px solid rgba(148,163,184,0.8)",
+                                    background: "rgba(15,23,42,0.9)",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem"
+                                }}
+                            />
+                            {fileName && (
+                                <small style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+                                    Selected: {fileName}
+                                </small>
+                            )}
+                        </label>
+
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                margin: "0.3rem 0",
+                                color: "#6b7280",
+                                fontSize: "0.75rem"
+                            }}
+                        >
+                            <div
+                                style={{
+                                    flex: 1,
+                                    height: 1,
+                                    background: "rgba(148,163,184,0.4)"
+                                }}
+                            />
+                            <span>or</span>
+                            <div
+                                style={{
+                                    flex: 1,
+                                    height: 1,
+                                    background: "rgba(148,163,184,0.4)"
+                                }}
+                            />
+                        </div>
+
+                        <label style={{ fontSize: "0.85rem" }}>
+              <span style={{ display: "block", marginBottom: 4 }}>
+                Crawl from URL
+              </span>
+                            <input
+                                type="url"
+                                placeholder="https://example.com"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.45rem 0.55rem",
+                                    borderRadius: 8,
+                                    border: "1px solid rgba(148,163,184,0.8)",
+                                    background: "rgba(15,23,42,0.9)",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem"
+                                }}
+                            />
+                        </label>
+
+                        {error && (
+                            <div
+                                style={{
+                                    marginTop: 4,
+                                    padding: "0.45rem 0.55rem",
+                                    borderRadius: 8,
+                                    background: "rgba(248,113,113,0.12)",
+                                    color: "#fecaca",
+                                    fontSize: "0.8rem"
+                                }}
+                            >
+                                {error}
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                marginTop: 4,
+                                padding: "0.55rem 0.8rem",
+                                borderRadius: 999,
+                                border: "none",
+                                background:
+                                    "linear-gradient(135deg, #38bdf8 0%, #6366f1 40%, #a855f7 100%)",
+                                color: "#f9fafb",
+                                fontWeight: 500,
+                                fontSize: "0.9rem",
+                                cursor: loading ? "default" : "pointer",
+                                boxShadow: "0 12px 30px rgba(37,99,235,0.45)",
+                                opacity: loading ? 0.7 : 1
+                            }}
+                        >
+                            {loading ? "Computing PageRank…" : "Compute PageRank"}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleUseDemo}
+                            style={{
+                                marginTop: 4,
+                                padding: "0.45rem 0.8rem",
+                                borderRadius: 999,
+                                border: "1px solid rgba(148,163,184,0.7)",
+                                background: "transparent",
+                                color: "#e5e7eb",
+                                fontSize: "0.8rem",
+                                cursor: "pointer"
+                            }}
+                        >
+                            Use demo graph
+                        </button>
+                    </form>
+                </section>
+
+                {/* SEARCH NODE */}
+                <section>
+                    <h2
+                        style={{
+                            fontSize: "0.85rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                            marginBottom: "0.3rem",
+                            color: "#9ca3af"
+                        }}
+                    >
+                        Find node
+                    </h2>
+                    <form
+                        onSubmit={handleSearch}
+                        style={{ display: "flex", gap: "0.4rem" }}
+                    >
+                        <input
+                            type="text"
+                            placeholder="Node id, e.g. A"
+                            value={searchId}
+                            onChange={(e) => setSearchId(e.target.value)}
+                            style={{
+                                flex: 1,
+                                padding: "0.35rem 0.5rem",
+                                borderRadius: 999,
+                                border: "1px solid rgba(148,163,184,0.8)",
+                                background: "rgba(15,23,42,0.9)",
+                                color: "#e5e7eb",
+                                fontSize: "0.8rem"
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            style={{
+                                padding: "0.35rem 0.7rem",
+                                borderRadius: 999,
+                                border: "none",
+                                background: "rgba(59,130,246,0.9)",
+                                color: "#f9fafb",
+                                fontSize: "0.8rem",
+                                cursor: "pointer",
+                                whiteSpace: "nowrap"
+                            }}
+                        >
+                            Go
+                        </button>
+                    </form>
+                </section>
+
+                {/* STATUS + TOP NODES */}
+                <section>
+                    <h2
+                        style={{
+                            fontSize: "0.85rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                            marginBottom: "0.3rem",
+                            color: "#9ca3af"
+                        }}
+                    >
+                        Status
+                    </h2>
+                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#9ca3af" }}>
+                        Nodes: {data.nodes.length} • Edges: {data.links.length}
+                    </p>
+                    <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem" }}>
+                        Hover a node to see its title and PageRank. Drag to explore, scroll
+                        to zoom.
+                    </p>
+                    <p
+                        style={{
+                            marginTop: "0.5rem",
+                            fontSize: "0.8rem",
+                            color: "#9ca3af",
+                            lineHeight: 1.4
+                        }}
+                    >
+                        • Larger nodes represent higher PageRank scores.
+                        <br />
+                        • Color encodes PageRank (blue → yellow).
+                        <br />
+                        • Hover a node to highlight it and its neighbors; others fade.
+                    </p>
+
+                    <div style={{ marginTop: "0.6rem" }}>
+                        <h3
+                            style={{
+                                margin: 0,
+                                fontSize: "0.8rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.1em",
+                                color: "#9ca3af"
+                            }}
+                        >
+                            Top pages
+                        </h3>
+                        <ul
+                            style={{
+                                listStyle: "none",
+                                margin: "0.3rem 0 0",
+                                padding: 0,
+                                fontSize: "0.8rem"
+                            }}
+                        >
+                            {topNodes.map((n, idx) => (
+                                <li key={n.id} style={{ marginBottom: 2 }}>
+                                    {idx + 1}. {n.title || n.id}{" "}
+                                    <span style={{ color: "#9ca3af" }}>
+                    ({(n.pagerank ?? 0).toFixed(4)})
+                  </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </section>
+
+                {/* NODE DETAILS */}
+                <section>
+                    <h2
+                        style={{
+                            fontSize: "0.85rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                            marginBottom: "0.3rem",
+                            color: "#9ca3af"
+                        }}
+                    >
+                        Node details
+                    </h2>
+                    {selectedNode ? (
+                        <div style={{ fontSize: "0.8rem", color: "#e5e7eb" }}>
+                            <div>
+                                <strong>{selectedNode.title || selectedNode.id}</strong>
+                            </div>
+                            <div style={{ color: "#9ca3af", marginTop: 2 }}>
+                                ID: {selectedNode.id}
+                            </div>
+                            <div style={{ marginTop: 4 }}>
+                                PageRank:{" "}
+                                <span style={{ color: "#facc15" }}>
+                  {(selectedNode.pagerank ?? 0).toFixed(6)}
+                </span>
+                            </div>
+                            <div style={{ marginTop: 2 }}>
+                                In-degree: {inDegree.get(selectedNode.id) ?? 0} • Out-degree:{" "}
+                                {outDegree.get(selectedNode.id) ?? 0}
+                            </div>
+                            <div style={{ marginTop: 6, color: "#9ca3af" }}>
+                                Incoming from:{" "}
+                                {Array.from(incoming.get(selectedNode.id) ?? []).join(", ") ||
+                                    "—"}
+                            </div>
+                            <div style={{ marginTop: 2, color: "#9ca3af" }}>
+                                Outgoing to:{" "}
+                                {Array.from(outgoing.get(selectedNode.id) ?? []).join(", ") ||
+                                    "—"}
+                            </div>
+                        </div>
+                    ) : (
+                        <p style={{ fontSize: "0.8rem", color: "#9ca3af" }}>
+                            Click a node or search by id to inspect it.
+                        </p>
+                    )}
+                </section>
+            </aside>
+
+            {/* GRAPH AREA */}
+            <main
+                style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: "1.4rem 1.6rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem",
+                    boxSizing: "border-box"
+                }}
+            >
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline"
+                    }}
+                >
+                    <div>
+                        <h2
+                            style={{
+                                margin: 0,
+                                fontSize: "0.95rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.15em",
+                                color: "#9ca3af"
+                            }}
+                        >
+                            Graph view
+                        </h2>
+                        <p
+                            style={{
+                                margin: "0.2rem 0 0",
+                                fontSize: "0.8rem",
+                                color: "#9ca3af"
+                            }}
+                        >
+                            Node size ≈ PageRank score. Layout uses a force-directed
+                            simulation.
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        flex: 1,
+                        borderRadius: 14,
+                        border: "1px solid rgba(51,65,85,0.9)",
+                        overflow: "hidden",
+                        boxShadow: "0 18px 45px rgba(15,23,42,0.8)"
+                    }}
+                >
+                    <ForceGraph2D
+                        ref={graphRef}
+                        graphData={graphData}
+                        backgroundColor="#050827"
+                        // Node size: proportional to PageRank, not insane
+                        nodeRelSize={7}
+                        nodeVal={(node) =>
+                            (node.pagerank != null ? node.pagerank : 0.05) * 18
+                        }
+                        // Hover behavior
+                        onNodeHover={(node) => setHoverNode(node || null)}
+                        // Click selects node + focuses camera
+                        onNodeClick={(node) => {
+                            setSelectedNode(node);
+                            setHoverNode(node);
+                            focusOnNode(node);
+                        }}
+                        nodeLabel={(node) =>
+                            `${node.title || node.id}\nPageRank: ${
+                                node.pagerank != null
+                                    ? Number(node.pagerank).toFixed(4)
+                                    : "unknown"
+                            }`
+                        }
+                        nodeColor={(node) => {
+                            const base = getNodeBaseColor(node);
+                            // always highlight selected node
+                            if (selectedNode && selectedNode.id === node.id) {
+                                return "#facc15";
+                            }
+                            if (!hoverNode) return base;
+                            return isNodeHighlighted(node)
+                                ? base
+                                : "rgba(148,163,184,0.25)";
+                        }}
+                        linkColor={(link) => {
+                            if (!hoverNode) return "rgba(148,163,184,0.35)";
+                            return isLinkHighlighted(link)
+                                ? "rgba(250,204,21,0.9)"
+                                : "rgba(148,163,184,0.08)";
+                        }}
+                        linkWidth={(link) => (isLinkHighlighted(link) ? 2 : 0.7)}
+                        linkDirectionalParticles={1}
+                        linkDirectionalParticleWidth={(link) =>
+                            isLinkHighlighted(link) ? 2 : 0
+                        }
+                    />
+                </div>
+            </main>
+        </div>
+    );
+}
+
+export default App;
